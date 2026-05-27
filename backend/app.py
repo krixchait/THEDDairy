@@ -9,7 +9,9 @@ cursor=conn.cursor()
 cursor.execute("""
     CREATE TABLE IF NOT EXISTS todos(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        task TEXT NOT NULL
+        username TEXT NOT NULL,
+        task TEXT NOT NULL,
+        completed INTEGER DEFAULT 0
 )
 """)
 conn.commit()
@@ -22,27 +24,30 @@ def home():
 @app.route("/add_todo",methods=["POST"])
 def add_todo():
     data=request.get_json()
-    task=data.get("task")
-    cursor.execute(
-        "INSERT INTO todos (task) VALUES (?)",
-        (task,)
 
+    username=data.get("username")
+    task=data.get("task")
+
+    cursor.execute(
+        "INSERT INTO todos (username,task) VALUES (?,?)",
+        (username,task)
     )
     conn.commit()
-
     return {
-        "message" : "Todo received successfully"
+        "message": " TODO received successfully"
     }
 
-@app.route("/get_todos", methods=["GET"])
-def get_todos():
 
-    cursor.execute("SELECT * FROM todos")
 
-    todos = cursor.fetchall()
-
+@app.route("/get_todos/<username>",methods=["GET"])
+def get_todos(username):
+    cursor.execute(
+        "SELECT * FROM todos WHERE username = ?",
+        (username,)
+    )
+    todos=cursor.fetchall()
     return {
-        "todos": todos
+        "todos":todos
     }
 
 
@@ -60,7 +65,16 @@ def delete_todo(task_id):
         "message": "Todo deleted successfully"
     }
 
-
+@app.route("/complete_todo/<int:task_id>",methods=["PUT"])
+def complete_todo(task_id):
+    cursor.execute(
+        "UPDATE todos SET completed=1 where id=?",
+        (task_id,)
+    )
+    conn.commit()
+    return{
+        "message":"Todo marked completed"
+    }
 
 
 if __name__=="__main__":
